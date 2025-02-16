@@ -1,0 +1,28 @@
+# PHPStorm
+/.idea
+/.ide
+/.dev
+
+# VSCodeish
+*.code-workspace
+
+# Composer
+/vendor/
+/composer.phar
+
+# Build data
+.env
+*.lock
+*.cache
+/index.php
+/*.js
+/*.css
+/*.latte
+/templates/
+/tests/
+/assets
+/var
+
+# Node
+/node_modules/
+package-lock.json

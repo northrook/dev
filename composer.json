@@ -1,0 +1,28 @@
+{
+  "name": "northrook/dev",
+  "type": "metapackage",
+  "keywords": [
+    "dev",
+    "php-cs-fixer",
+    "phpstan"
+  ],
+  "description": "Collection of custom --dev related packages.",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Martin",
+      "email": "mn@northrook.com"
+    }
+  ],
+  "minimum-stability": "dev",
+  "prefer-stable": true,
+  "require": {
+    "php": ">=8.3",
+    "phpstan/phpstan": " @stable",
+    "northrook/php-cs": "dev-main",
+    "northrook/logger": "dev-main",
+    "jetbrains/phpstorm-attributes": "^1.2",
+    "symfony/var-dumper": "@stable",
+    "tracy/tracy": "@stable"
+  }
+}
