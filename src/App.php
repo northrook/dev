@@ -35,17 +35,27 @@ class App
     /**
      * @param array<string, mixed> $parameters
      * @param null|LoggerInterface $logger
+     * @param bool                 $enableDebug
      */
     public function __construct(
         array            $parameters = [],
         ?LoggerInterface $logger = null,
+        bool             $enableDebug = true,
     ) {
+        if ( $enableDebug ) {
+            \Tracy\Debugger::enable();
+        }
+
         $this->parameters = \array_merge( $this->parameters, $parameters );
-        $this->parameters += [
-            'dir.root'  => $this->getProjectDir(),
-            'dir.cache' => $this->getProjectDir().'/var',
-            'title'     => $_SERVER['HTTP_HOST'] ?? 'Development Environment',
-        ];
+        // 'title'     => $_SERVER['HTTP_HOST'] ?? 'Development Environment',
+        $this->parameters['title'] ??= \ucwords(
+            \str_replace( ['.', '-', '_'], ' ', \basename( __DIR__ ) ),
+        );
+        $this->parameters['dir.root']          ??= $this->getProjectDir();
+        $this->parameters['dir.assets']        ??= 'dir.root/assets';
+        $this->parameters['dir.cache']         ??= 'dir.root/var';
+        $this->parameters['dir.public']        ??= 'dir.root/public';
+        $this->parameters['dir.public.assets'] ??= 'dir.root/public/assets';
 
         $this->logger = $logger ?? new Logger();
         Log::setLogger( $this->logger );
