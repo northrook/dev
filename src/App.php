@@ -22,6 +22,12 @@ class App
         'debug' => true,
     ];
 
+    public readonly string $title;
+
+    public readonly string $env;
+
+    public readonly bool $debug;
+
     public readonly Pathfinder $pathfinder;
 
     public readonly CacheItemPoolInterface $cacheItemPool;
@@ -57,6 +63,10 @@ class App
         $this->parameters['dir.public']        ??= 'dir.root/public';
         $this->parameters['dir.public.assets'] ??= 'dir.root/public/assets';
 
+        $this->env   = $this->parameters['env']   ?? 'dev';
+        $this->debug = $this->parameters['debug'] ?? true;
+        $this->title = $this->parameters['title'];
+
         $this->logger = $logger ?? new Logger();
         Log::setLogger( $this->logger );
 
@@ -64,6 +74,12 @@ class App
         $this->cacheItemPool = new LocalStorage( $this->pathfinder->get( 'dir.cache/_dev-cacheItemPool.php' ) );
 
         \register_shutdown_function( [$this, 'onShutdown'] );
+    }
+
+    public function newLocalStorage( string $name ) : CacheItemPoolInterface
+    {
+        $name = (string) \preg_replace( '/[^a-z0-9.]+/i', '.', $name );
+        return new LocalStorage( $this->pathfinder->get( "dir.cache/{$name}.php" ) );
     }
 
     public function getProjectDir() : string
