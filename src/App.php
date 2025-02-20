@@ -85,7 +85,7 @@ class App
     {
         return $this->parameters['dir.root'] ??= ( static function() : string {
             // Split the current directory into an array of directory segments
-            $segments = \explode( '', __DIR__ );
+            $segments = \explode( DIRECTORY_SEPARATOR, __DIR__ );
 
             // Ensure the directory array has at least 5 segments and a valid vendor value
             if ( ( \count( $segments ) >= 5 && $segments[\count( $segments ) - 4] === 'vendor' ) ) {
