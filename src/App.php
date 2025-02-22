@@ -10,12 +10,11 @@ use Northrook\Logger;
 use Northrook\Logger\{Log, Output};
 use Psr\Cache\CacheItemPoolInterface;
 use Psr\Log\LoggerInterface;
-use BadFunctionCallException;
-use function Support\{normalizePath};
+use function Support\{getProjectDirectory};
 
 class App
 {
-    /** @var array<string, mixed> */
+    /** @var array<string, bool|string> */
     private array $parameters = [
         'env'   => 'dev',
         'debug' => true,
@@ -38,9 +37,9 @@ class App
     public bool $logsExpanded = true;
 
     /**
-     * @param array<string, mixed> $parameters
-     * @param null|LoggerInterface $logger
-     * @param bool                 $enableDebug
+     * @param array<string, bool|string> $parameters
+     * @param null|LoggerInterface       $logger
+     * @param bool                       $enableDebug
      */
     public function __construct(
         array            $parameters = [],
@@ -54,17 +53,17 @@ class App
         $this->parameters = \array_merge( $this->parameters, $parameters );
         // 'title'     => $_SERVER['HTTP_HOST'] ?? 'Development Environment',
         $this->parameters['title'] ??= \ucwords(
-            \str_replace( ['.', '-', '_'], ' ', \basename( __DIR__ ) ),
+            \str_replace( ['.', '-', '_'], ' ', \basename( getProjectDirectory() ) ),
         );
-        $this->parameters['dir.root']          ??= $this->getProjectDir();
-        $this->parameters['dir.assets']        ??= 'dir.root/assets';
-        $this->parameters['dir.cache']         ??= 'dir.root/var';
-        $this->parameters['dir.public']        ??= 'dir.root/public';
-        $this->parameters['dir.public.assets'] ??= 'dir.root/public/assets';
+        $this->parameters['dir.root']          ??= getProjectDirectory();
+        $this->parameters['dir.assets']        ??= '%dir.root%/assets';
+        $this->parameters['dir.cache']         ??= '%dir.root%/var';
+        $this->parameters['dir.public']        ??= '%dir.root%/public';
+        $this->parameters['dir.public.assets'] ??= '%dir.root%/public/assets';
 
-        $this->env   = $this->parameters['env']   ?? 'dev';
-        $this->debug = $this->parameters['debug'] ?? true;
-        $this->title = $this->parameters['title'];
+        $this->env   = (string) $this->parameters['env'];
+        $this->debug = (bool) $this->parameters['debug'];
+        $this->title = (string) $this->parameters['title'];
 
         $this->logger = $logger ?? new Logger();
         Log::setLogger( $this->logger );
@@ -79,27 +78,6 @@ class App
     {
         $name = (string) \preg_replace( '/[^a-z0-9.]+/i', '.', $name );
         return new LocalStorage( $this->pathfinder->get( "dir.cache/{$name}.php" ) );
-    }
-
-    public function getProjectDir() : string
-    {
-        return $this->parameters['dir.root'] ??= ( static function() : string {
-            // Split the current directory into an array of directory segments
-            $segments = \explode( DIRECTORY_SEPARATOR, __DIR__ );
-
-            // Ensure the directory array has at least 5 segments and a valid vendor value
-            if ( ( \count( $segments ) >= 5 && $segments[\count( $segments ) - 4] === 'vendor' ) ) {
-                // Remove the last 4 segments (vendor, package name, and Composer structure)
-                $rootSegments = \array_slice( $segments, 0, -4 );
-            }
-            else {
-                $message = __FUNCTION__.' was unable to determine a valid root. Current path: '.__DIR__;
-                throw new BadFunctionCallException( $message );
-            }
-
-            // Normalize and return the project path
-            return normalizePath( ...$rootSegments );
-        } )();
     }
 
     private function onShutdown() : void
