@@ -68,8 +68,9 @@ class App
         $this->logger = $logger ?? new Logger();
         Log::setLogger( $this->logger );
 
-        $this->pathfinder    = new Pathfinder( $this->parameters, logger : $this->logger );
-        $this->cacheItemPool = new LocalStorage( $this->pathfinder->get( 'dir.cache/_dev-cacheItemPool.php' ) );
+        $this->pathfinder        = new Pathfinder( $this->parameters, logger : $this->logger );
+        $this->pathfinder->quiet = true;
+        $this->cacheItemPool     = new LocalStorage( $this->pathfinder->get( 'dir.cache/_dev-cacheItemPool.php' ) );
 
         \register_shutdown_function( [$this, 'onShutdown'] );
     }
