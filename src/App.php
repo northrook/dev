@@ -10,6 +10,9 @@ use Northrook\Logger;
 use Northrook\Logger\{Log, Output};
 use Psr\Cache\CacheItemPoolInterface;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\Cache\Adapter\PhpFilesAdapter;
+use RuntimeException;
+use Throwable;
 use function Support\{getProjectDirectory};
 
 class App
@@ -88,6 +91,26 @@ class App
             echo "<details {$open}><summary>Logs</summary>";
             Output::dump( $this->logger );
             echo '</details>';
+        }
+    }
+
+    public function newPhpFilesAdapter(
+        string  $namespace = 'dev.app',
+        int     $defaultLifetime = 0,
+        ?string $directory = null,
+        bool    $appendOnly = false,
+    ) : PhpFilesAdapter {
+        if ( ! \class_exists( PhpFilesAdapter::class ) ) {
+            throw new RuntimeException(
+                "PhpFilesAdapter is not available.\nRun 'composer require symfony/cache' to install it.",
+            );
+        }
+        try {
+            $directory ??= $this->pathfinder->get( "dir.cache/{$namespace}.php" );
+            return new PhpFilesAdapter( $namespace, $defaultLifetime, $directory, $appendOnly );
+        }
+        catch ( Throwable $e ) {
+            throw new RuntimeException( $e->getMessage(), $e->getCode(), $e );
         }
     }
 }

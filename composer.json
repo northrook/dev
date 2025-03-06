@@ -31,5 +31,8 @@
     "symfony/var-dumper": "@stable",
     "tracy/tracy": "@stable",
     "northrook/pathfinder": "dev-main"
+  },
+  "require-dev": {
+    "symfony/cache": "^7.2"
   }
 }
