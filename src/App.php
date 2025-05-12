@@ -13,6 +13,7 @@ use Psr\Log\LoggerInterface;
 use Symfony\Component\Cache\Adapter\PhpFilesAdapter;
 use RuntimeException;
 use Throwable;
+use Tracy\Debugger;
 use function Support\{getProjectDirectory};
 
 class App
@@ -50,7 +51,7 @@ class App
         bool             $enableDebug = true,
     ) {
         if ( $enableDebug ) {
-            \Tracy\Debugger::enable();
+            Debugger::enable();
         }
 
         $this->parameters = \array_merge( $this->parameters, $parameters );
@@ -71,9 +72,9 @@ class App
         $this->logger = $logger ?? new Logger();
         Log::setLogger( $this->logger );
 
-        $this->pathfinder        = new Pathfinder( $this->parameters, logger : $this->logger );
-        $this->pathfinder->quiet = true;
-        $this->cacheItemPool     = new LocalStorage( $this->pathfinder->get( 'dir.cache/_dev-cacheItemPool.php' ) );
+        $this->pathfinder = new Pathfinder( $this->parameters );
+        $this->pathfinder->setLogger( $this->logger );
+        $this->cacheItemPool = new LocalStorage( $this->pathfinder->get( 'dir.cache/_dev-cacheItemPool.php' ) );
 
         \register_shutdown_function( [$this, 'onShutdown'] );
     }
