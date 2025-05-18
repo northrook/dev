@@ -10,5 +10,5 @@ use Attribute;
 #[Attribute( Attribute::TARGET_ALL )]
 final readonly class Experimental
 {
-    public function __construct( public ?string $note ) {}
+    public function __construct( public ?string $note = null ) {}
 }
