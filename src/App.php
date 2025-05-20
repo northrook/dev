@@ -72,9 +72,10 @@ class App
         $this->logger = $logger ?? new Logger();
         Log::setLogger( $this->logger );
 
-        $this->pathfinder = new Pathfinder( $this->parameters );
+        $this->pathfinder = new Pathfinder( \array_filter( $this->parameters, 'is_string' ) );
         $this->pathfinder->setLogger( $this->logger );
         $this->cacheItemPool = new LocalStorage( $this->pathfinder->get( 'dir.cache/_dev-cacheItemPool.php' ) );
+        $this->cacheItemPool->setLogger( $this->logger );
 
         \register_shutdown_function( [$this, 'onShutdown'] );
     }
