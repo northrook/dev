@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace _Dev;
 
 use Cache\LocalStorage;
-use Core\Pathfinder;
+use Core\{Pathfinder, SettingsProvider};
 use Northrook\Logger;
 use Northrook\Logger\{Log, Output};
 use Psr\Cache\CacheItemPoolInterface;
@@ -14,11 +14,18 @@ use Symfony\Component\Cache\Adapter\PhpFilesAdapter;
 use RuntimeException;
 use Throwable;
 use Tracy\Debugger;
-use function Support\{getProjectDirectory};
+use function Support\{getProjectDirectory,
+    is_path,
+    is_stringable,
+    is_url,
+    normalize_path,
+    normalize_url,
+    str_starts_with_any
+};
 
 class App
 {
-    /** @var array<string, bool|string> */
+    /** @var array<string, mixed> */
     private array $parameters = [
         'env'   => 'dev',
         'debug' => true,
@@ -32,6 +39,8 @@ class App
 
     public readonly Pathfinder $pathfinder;
 
+    public readonly SettingsProvider $settingsProvider;
+
     public readonly CacheItemPoolInterface $cacheItemPool;
 
     public readonly LoggerInterface $logger;
@@ -41,9 +50,9 @@ class App
     public bool $logsExpanded = true;
 
     /**
-     * @param array<string, bool|string> $parameters
-     * @param null|LoggerInterface       $logger
-     * @param bool                       $enableDebug
+     * @param array<string, mixed> $parameters
+     * @param null|LoggerInterface $logger
+     * @param bool                 $enableDebug
      */
     public function __construct(
         array            $parameters = [],
@@ -54,30 +63,53 @@ class App
             Debugger::enable();
         }
 
+        $scheme = $_SERVER['REQUEST_SCHEME'];
+        $domain = $_SERVER['SERVER_NAME'];
+        $host   = $_SERVER['HTTP_HOST'];
+
+        \assert( \is_string( $scheme ) && \is_string( $domain ) && \is_string( $host ) );
+
         $this->parameters = \array_merge( $this->parameters, $parameters );
-        // 'title'     => $_SERVER['HTTP_HOST'] ?? 'Development Environment',
-        $this->parameters['title'] ??= \ucwords(
-            \str_replace( ['.', '-', '_'], ' ', \basename( getProjectDirectory() ) ),
-        );
+
+        $this->parameters['site.title'] ??= $this->resolveTitle();
+        $this->parameters['site.url']   ??= "{$scheme}://{$domain}";
+
         $this->parameters['dir.root']          ??= getProjectDirectory();
         $this->parameters['dir.assets']        ??= '%dir.root%/assets';
-        $this->parameters['dir.cache']         ??= '%dir.root%/var';
+        $this->parameters['dir.cache']         ??= '%dir.root%/var/cache';
+        $this->parameters['dir.temp']          ??= '%dir.root%/var/temp';
         $this->parameters['dir.public']        ??= '%dir.root%/public';
         $this->parameters['dir.public.assets'] ??= '%dir.root%/public/assets';
 
         $this->env   = (string) $this->parameters['env'];
         $this->debug = (bool) $this->parameters['debug'];
-        $this->title = (string) $this->parameters['title'];
+        $this->title = (string) $this->parameters['site.title'];
+
+        $this->settingsProvider = new SettingsProvider( assignMissingDefaults : true );
 
         $this->logger = $logger ?? new Logger();
         Log::setLogger( $this->logger );
 
-        $this->pathfinder = new Pathfinder( \array_filter( $this->parameters, 'is_string' ) );
+        $this->pathfinder = new Pathfinder( $this->pathfinderParameters() );
         $this->pathfinder->setLogger( $this->logger );
-        $this->cacheItemPool = new LocalStorage( $this->pathfinder->get( 'dir.cache/_dev-cacheItemPool.php' ) );
+
+        $this->cacheItemPool = new LocalStorage( $this->pathfinder->get( 'dir.cache/_dev-fileCache.php' ) );
         $this->cacheItemPool->setLogger( $this->logger );
 
         \register_shutdown_function( [$this, 'onShutdown'] );
+    }
+
+    /**
+     * @param null|string $key
+     *
+     * @return ($key is null ?  array<string, mixed> : null|string)
+     */
+    public function getParameter( ?string $key = null ) : string|array|null
+    {
+        if ( $key === null ) {
+            return $this->parameters;
+        }
+        return $this->parameters[$key] ?? null;
     }
 
     public function newLocalStorage( string $name ) : CacheItemPoolInterface
@@ -94,6 +126,40 @@ class App
             Output::dump( $this->logger );
             echo '</details>';
         }
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function pathfinderParameters() : array
+    {
+        $parameters = [];
+
+        foreach ( $this->parameters as $key => $value ) {
+            if ( is_stringable( $value ) ) {
+                $string = (string) $value;
+            }
+            else {
+                continue;
+            }
+
+            $isUrl   = is_url( $string );
+            $isPath  = is_path( $string );
+            $isNamed = str_starts_with_any( $key, 'dir.', 'path.' );
+
+            if ( ! ( $isUrl || $isPath || $isNamed ) ) {
+                continue;
+            }
+
+            $parameters[$key] = match ( true ) {
+                $isUrl  => normalize_url( $string ),
+                $isPath => normalize_path( $string ),
+                default => $string,
+            };
+        }
+
+        \ksort( $parameters );
+        return $parameters;
     }
 
     public function newPhpFilesAdapter(
@@ -114,5 +180,12 @@ class App
         catch ( Throwable $e ) {
             throw new RuntimeException( $e->getMessage(), $e->getCode(), $e );
         }
+    }
+
+    private function resolveTitle() : string
+    {
+        return \ucwords(
+            \str_replace( ['.', '-', '_'], ' ', \basename( getProjectDirectory() ) ),
+        );
     }
 }

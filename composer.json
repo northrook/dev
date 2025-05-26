@@ -33,7 +33,8 @@
     "jetbrains/phpstorm-attributes": "^1.2",
     "symfony/var-dumper": "@stable",
     "tracy/tracy": "@stable",
-    "northrook/pathfinder": "dev-main"
+    "northrook/pathfinder": "dev-main",
+    "northrook/settings": "dev-main"
   },
   "require-dev": {
     "symfony/cache": "^7.2"
