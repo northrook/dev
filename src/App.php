@@ -85,7 +85,13 @@ class App
         $this->debug = (bool) $this->parameters['debug'];
         $this->title = (string) $this->parameters['site.title'];
 
-        $this->settingsProvider = new SettingsProvider( assignMissingDefaults : true );
+        $this->settingsProvider = new SettingsProvider(
+            defaults              : [
+                'site.title' => (string) $parameters['site.title'],
+                'site.url'   => (string) $parameters['site.url'],
+            ],
+            assignMissingDefaults : true,
+        );
 
         $this->logger = $logger ?? new Logger();
         Log::setLogger( $this->logger );
