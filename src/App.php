@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace _Dev;
 
 use Cache\LocalStorage;
-use Core\{Pathfinder, SettingsProvider};
+use Core\{Interface\ProfilerInterface, Pathfinder, Profiler, SettingsProvider};
 use Northrook\Logger;
 use Northrook\Logger\{Log, Output};
 use Psr\Cache\CacheItemPoolInterface;
@@ -45,19 +45,23 @@ class App
 
     public readonly LoggerInterface $logger;
 
+    public readonly ProfilerInterface $profiler;
+
     public bool $showLogs = true;
 
     public bool $logsExpanded = true;
 
     /**
-     * @param array<string, mixed> $parameters
-     * @param null|LoggerInterface $logger
-     * @param bool                 $enableDebug
+     * @param array<string, mixed>        $parameters
+     * @param null|LoggerInterface        $logger
+     * @param null|ProfilerInterface|true $profiler
+     * @param bool                        $enableDebug
      */
     public function __construct(
-        array            $parameters = [],
-        ?LoggerInterface $logger = null,
-        bool             $enableDebug = true,
+        array                       $parameters = [],
+        ?LoggerInterface            $logger = null,
+        null|true|ProfilerInterface $profiler = null,
+        bool                        $enableDebug = true,
     ) {
         if ( $enableDebug ) {
             Debugger::enable();
@@ -101,6 +105,10 @@ class App
 
         $this->cacheItemPool = new LocalStorage( $this->pathfinder->get( 'dir.cache/_dev-fileCache.php' ) );
         $this->cacheItemPool->setLogger( $this->logger );
+
+        $this->profiler = $profiler instanceof ProfilerInterface
+                ? $profiler
+                : new Profiler( $profiler );
 
         \register_shutdown_function( [$this, 'onShutdown'] );
     }
