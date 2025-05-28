@@ -91,8 +91,8 @@ class App
 
         $this->settingsProvider = new SettingsProvider(
             defaults              : [
-                'site.title' => (string) $parameters['site.title'],
-                'site.url'   => (string) $parameters['site.url'],
+                'site.title' => (string) $this->parameters['site.title'],
+                'site.url'   => (string) $this->parameters['site.url'],
             ],
             assignMissingDefaults : true,
         );
