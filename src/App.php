@@ -54,13 +54,13 @@ class App
     /**
      * @param array<string, mixed>        $parameters
      * @param null|LoggerInterface        $logger
-     * @param null|ProfilerInterface|true $profiler
+     * @param null|bool|ProfilerInterface $profiler
      * @param bool                        $enableDebug
      */
     public function __construct(
         array                       $parameters = [],
         ?LoggerInterface            $logger = null,
-        null|true|ProfilerInterface $profiler = null,
+        null|bool|ProfilerInterface $profiler = true,
         bool                        $enableDebug = true,
     ) {
         if ( $enableDebug ) {
