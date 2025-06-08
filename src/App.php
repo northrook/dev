@@ -14,7 +14,8 @@ use Symfony\Component\Cache\Adapter\PhpFilesAdapter;
 use RuntimeException;
 use Throwable;
 use Tracy\Debugger;
-use function Support\{getProjectDirectory,
+use function Support\{
+    get_project_directory,
     is_path,
     is_stringable,
     is_url,
@@ -56,6 +57,8 @@ class App
      * @param null|LoggerInterface        $logger
      * @param null|bool|ProfilerInterface $profiler
      * @param bool                        $enableDebug
+     *
+     * @noinspection PhpInternalEntityUsedInspection
      */
     public function __construct(
         array                       $parameters = [],
@@ -78,7 +81,7 @@ class App
         $this->parameters['site.title'] ??= $this->resolveTitle();
         $this->parameters['site.url']   ??= "{$scheme}://{$domain}";
 
-        $this->parameters['dir.root']          ??= getProjectDirectory();
+        $this->parameters['dir.root']          ??= get_project_directory();
         $this->parameters['dir.assets']        ??= '%dir.root%/assets';
         $this->parameters['dir.cache']         ??= '%dir.root%/var/cache';
         $this->parameters['dir.temp']          ??= '%dir.root%/var/temp';
@@ -143,14 +146,18 @@ class App
     }
 
     /**
-     * @return array<string, string>
+     * @return array<non-empty-string, string>
      */
     private function pathfinderParameters() : array
     {
         $parameters = [];
 
         foreach ( $this->parameters as $key => $value ) {
-            if ( is_stringable( $value ) ) {
+            if (
+                \is_string( $key )
+                && ! empty( $key )
+                && is_stringable( $value )
+            ) {
                 $string = (string) $value;
             }
             else {
@@ -199,7 +206,7 @@ class App
     private function resolveTitle() : string
     {
         return \ucwords(
-            \str_replace( ['.', '-', '_'], ' ', \basename( getProjectDirectory() ) ),
+            \str_replace( ['.', '-', '_'], ' ', \basename( get_project_directory() ) ),
         );
     }
 }
