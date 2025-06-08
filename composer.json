@@ -35,7 +35,8 @@
     "tracy/tracy": "@stable",
     "northrook/pathfinder": "dev-main",
     "northrook/settings": "dev-main",
-    "northrook/profiler": "dev-main"
+    "northrook/profiler": "dev-main",
+    "symfony/http-foundation": "^7.3"
   },
   "require-dev": {
     "symfony/cache": "^7.2"

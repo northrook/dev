@@ -12,6 +12,7 @@ use Psr\Cache\CacheItemPoolInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Cache\Adapter\PhpFilesAdapter;
 use RuntimeException;
+use Symfony\Component\HttpFoundation\Request;
 use Throwable;
 use Tracy\Debugger;
 use function Support\{
@@ -37,6 +38,8 @@ class App
     public readonly string $env;
 
     public readonly bool $debug;
+
+    public readonly Request $request;
 
     public readonly Pathfinder $pathfinder;
 
@@ -70,16 +73,12 @@ class App
             Debugger::enable();
         }
 
-        $scheme = $_SERVER['REQUEST_SCHEME'];
-        $domain = $_SERVER['SERVER_NAME'];
-        $host   = $_SERVER['HTTP_HOST'];
-
-        \assert( \is_string( $scheme ) && \is_string( $domain ) && \is_string( $host ) );
+        $this->request = Request::createFromGlobals();
 
         $this->parameters = \array_merge( $this->parameters, $parameters );
 
         $this->parameters['site.title'] ??= $this->resolveTitle();
-        $this->parameters['site.url']   ??= "{$scheme}://{$domain}";
+        $this->parameters['site.url']   ??= "{$this->request->getScheme()}://{$this->request->getHttpHost()}";
 
         $this->parameters['dir.root']          ??= get_project_directory();
         $this->parameters['dir.assets']        ??= '%dir.root%/assets';
