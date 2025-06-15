@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace _Dev;
 
 use Cache\LocalStorage;
-use Core\{Interface\ProfilerInterface, Pathfinder, Profiler, SettingsProvider};
+use Core\Contracts\ProfilerInterface;
+use Core\{Contracts\SettingsInterface, Pathfinder, Profiler, SettingsProvider};
 use Northrook\Logger;
 use Northrook\Logger\{Log, Output};
 use Psr\Cache\CacheItemPoolInterface;
@@ -43,7 +44,7 @@ class App
 
     public readonly Pathfinder $pathfinder;
 
-    public readonly SettingsProvider $settingsProvider;
+    public readonly SettingsInterface $settings;
 
     public readonly CacheItemPoolInterface $cacheItemPool;
 
@@ -61,7 +62,7 @@ class App
      * @param null|bool|ProfilerInterface $profiler
      * @param bool                        $enableDebug
      *
-     * @noinspection PhpInternalEntityUsedInspection
+     *
      */
     public function __construct(
         array                       $parameters = [],
@@ -91,7 +92,7 @@ class App
         $this->debug = (bool) $this->parameters['debug'];
         $this->title = (string) $this->parameters['site.title'];
 
-        $this->settingsProvider = new SettingsProvider(
+        $this->settings = new SettingsProvider(
             defaults              : [
                 'site.title' => (string) $this->parameters['site.title'],
                 'site.url'   => (string) $this->parameters['site.url'],
@@ -103,14 +104,21 @@ class App
         Log::setLogger( $this->logger );
 
         $this->pathfinder = new Pathfinder( $this->pathfinderParameters() );
-        $this->pathfinder->setLogger( $this->logger );
+        $this->pathfinder->assignLogger( $this->logger );
 
-        $this->cacheItemPool = new LocalStorage( $this->pathfinder->get( 'dir.cache/_dev-fileCache.php' ) );
+        $this->cacheItemPool = new LocalStorage(
+            $this->pathfinder->getPath( 'dir.cache/_dev-fileCache.php' ),
+        );
+
         $this->cacheItemPool->setLogger( $this->logger );
 
         $this->profiler = $profiler instanceof ProfilerInterface
                 ? $profiler
-                : new Profiler( $profiler );
+                : new Profiler(
+                    category       : $this::class,
+                    disabled       : false,
+                    getMemoryUsage : true,
+                );
 
         \register_shutdown_function( [$this, 'onShutdown'] );
     }
@@ -131,7 +139,7 @@ class App
     public function newLocalStorage( string $name ) : CacheItemPoolInterface
     {
         $name = (string) \preg_replace( '/[^a-z0-9.]+/i', '.', $name );
-        return new LocalStorage( $this->pathfinder->get( "dir.cache/{$name}.php" ) );
+        return new LocalStorage( $this->pathfinder->getPath( "dir.cache/{$name}.php" ) );
     }
 
     private function onShutdown() : void
@@ -194,7 +202,7 @@ class App
             );
         }
         try {
-            $directory ??= $this->pathfinder->get( "dir.cache/{$namespace}.php" );
+            $directory ??= $this->pathfinder->getPath( "dir.cache/{$namespace}.php" );
             return new PhpFilesAdapter( $namespace, $defaultLifetime, $directory, $appendOnly );
         }
         catch ( Throwable $e ) {
